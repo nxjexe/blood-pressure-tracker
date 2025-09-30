@@ -18,19 +18,19 @@
             <form method="POST" action="/" class="space-y-4">
                 <div>
                     <label for="sys" class="block text-gray-700">Systolisch:</label>
-                    <input type="text" name="sys" id="sys" class="w-full p-2 border rounded">
+                    <input type="number" name="sys" id="sys" required class="w-full p-2 border rounded">
                 </div>
                 <div>
                     <label for="dia" class="block text-gray-700">Diastolisch:</label>
-                    <input type="text" name="dia" id="dia" class="w-full p-2 border rounded">
+                    <input type="number" name="dia" id="dia" required class="w-full p-2 border rounded">
                 </div>
                 <div>
                     <label for="pulse" class="block text-gray-700">Puls:</label>
-                    <input type="text" name="pulse" id="pulse" class="w-full p-2 border rounded">
+                    <input type="number" name="pulse" id="pulse" required class="w-full p-2 border rounded">
                 </div>
                 <div>
                     <label for="comment" class="block text-gray-700">Kommentar:</label>
-                    <input type="text" name="comment" id="comment" class="w-full p-2 border rounded">
+                    <textarea name="comment" id="comment" class="w-full p-2 border rounded" rows="4"></textarea>
                 </div>
                 <input type="submit" value="Hinzufügen" class="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700">
             {% if error %}

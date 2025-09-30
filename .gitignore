@@ -1,0 +1,17 @@
+# SQLite Datenbank
+bp.db
+
+# Python Cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# UV/Venv
+.venv/
+uv.lock
+.uv_cache/
+
+# Sonstiges
+*.log
+.DS_Store  # MacOS Junk

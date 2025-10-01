@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="de">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Blutdruck-Tracker – Plot</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+    </head>
+    <body class="min-h-screen bg-gray-100">
+        <header class="bg-blue-600 text-white p-4 shadow-md">
+            <h1 class="text-2xl font-bold text-center">Blutdruck-Tracker</h1>
+            <nav class="flex justify-center space-x-4 mt-2">
+                <a href="{{ url_for('home') }}" class="hover:underline">Home</a>
+                <a href="{{ url_for('plot') }}" class="hover:underline">Plot</a>
+            </nav>
+        </header>
+        <main class="w-full max-w-5xl mx-auto mt-8 p-6 bg-white rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold mb-4">Verlauf</h2>
+            <div id="chart" class="w-full" style="height: 500px"></div>
+        </main>
+        <script>
+        (function() {
+            const logs = [
+                {% for log in logs %}
+                {
+                    time: "{{ log.time.isoformat() }}",
+                    sys: {{ log.sys }},
+                    dia: {{ log.dia }},
+                    pulse: {{ log.pulse }}
+                }{% if not loop.last %},{% endif %}
+                {% endfor %}
+            ];
+
+            const x = logs.map(l => l.time);
+            const sys = logs.map(l => l.sys);
+            const dia = logs.map(l => l.dia);
+            const pulse = logs.map(l => l.pulse);
+
+            const traces = [
+                { name: 'Sys', x, y: sys, mode: 'lines+markers', line: { color: '#ef4444' } },
+                { name: 'Dia', x, y: dia, mode: 'lines+markers', line: { color: '#3b82f6' } },
+                { name: 'Puls', x, y: pulse, mode: 'lines+markers', line: { color: '#10b981' }, yaxis: 'y2' }
+            ];
+
+            const layout = {
+                margin: { t: 20, r: 40, b: 60, l: 60 },
+                xaxis: { title: 'Zeit', type: 'date' },
+                yaxis: { title: 'mmHg (Sys/Dia)' },
+                yaxis2: { title: 'Puls (bpm)', overlaying: 'y', side: 'right' },
+                legend: { orientation: 'h', x: 0, y: -0.2 }
+            };
+
+            Plotly.newPlot('chart', traces, layout, { displayModeBar: false, responsive: true });
+        })();
+        </script>
+    </body>
+</html>
+
+

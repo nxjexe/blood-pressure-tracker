@@ -66,5 +66,12 @@ def delete_log(log_id):
     session.close()
     return redirect(url_for('home'))
 
+@app.route('/plot')
+def plot():
+    session = Session()
+    logs = session.query(BPLog).order_by(BPLog.time.asc()).all()
+    session.close()
+    return render_template('plot.html', logs=logs)
+
 if __name__ == '__main__':
     app.run(debug=True)

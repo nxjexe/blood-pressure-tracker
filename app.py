@@ -49,10 +49,10 @@ def home():
             session.close()
             return redirect(url_for('home'))
         except (ValueError, TypeError):
-            logs = session.query(BPLog).all()
+            logs = session.query(BPLog).order_by(BPLog.time.desc()).all()
             session.close()
             return render_template('index.html', logs=logs, error="Ungültige Eingabe - bitte Zahlen und Datum eingeben.")
-    logs = session.query(BPLog).all()
+    logs = session.query(BPLog).order_by(BPLog.time.desc()).all()
     session.close()
     return render_template('index.html', logs=logs, error=None) # prüfe, ob du error=None weglassen kannst
 

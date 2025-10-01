@@ -31,20 +31,27 @@ def home():
     session = Session()
     if request.method == 'POST':
         try:
+            manual_time_str = request.form.get('manual_time', '')
+            if manual_time_str:
+                manual_time = datetime.fromisoformat(manual_time_str).replace(tzinfo=ZoneInfo('Europe/Berlin'))
+            else:
+                manual_time = custom_timezone_now()
+            
             log = BPLog(
                 sys=int(request.form.get('sys', 0)),
                 dia=int(request.form.get('dia', 0)),
                 pulse=int(request.form.get('pulse', 0)),
-                comment=request.form.get('comment', '') # Leerer String als Default
+                comment=request.form.get('comment', ''), # Leerer String als Default
+                time=manual_time
             )
             session.add(log)
             session.commit()
             session.close()
             return redirect(url_for('home'))
-        except ValueError:
+        except (ValueError, TypeError):
             logs = session.query(BPLog).all()
             session.close()
-            return render_template('index.html', logs=logs, error="Bitte gültige Zahlen eingeben.")
+            return render_template('index.html', logs=logs, error="Ungültige Eingabe - bitte Zahlen und Datum eingeben.")
     logs = session.query(BPLog).all()
     session.close()
     return render_template('index.html', logs=logs, error=None) # prüfe, ob du error=None weglassen kannst

@@ -11,7 +11,7 @@
         <header class="bg-blue-600 text-white p-4 shadow-md">
             <h1 class="text-2xl font-bold text-center">Blutdruck-Tracker</h1>
             <nav class="flex justify-center space-x-4 mt-2">
-                <a href="{{ url_for('home') }}" class="hover:underline">Home</a>
+                <a href="{{ url_for('index') }}" class="hover:underline">Home</a>
                 <a href="{{ url_for('plot') }}" class="hover:underline">Plot</a>
             </nav>
         </header>
@@ -27,7 +27,7 @@
                     time: "{{ log.time.isoformat() }}",
                     sys: {{ log.sys }},
                     dia: {{ log.dia }},
-                    pulse: {{ log.pulse }}
+                    pul: {{ log.pul }}
                 }{% if not loop.last %},{% endif %}
                 {% endfor %}
             ];
@@ -35,12 +35,12 @@
             const x = logs.map(l => l.time);
             const sys = logs.map(l => l.sys);
             const dia = logs.map(l => l.dia);
-            const pulse = logs.map(l => l.pulse);
+            const pul = logs.map(l => l.pul);
 
             const traces = [
                 { name: 'Sys', x, y: sys, mode: 'lines+markers', line: { color: '#ef4444' } },
                 { name: 'Dia', x, y: dia, mode: 'lines+markers', line: { color: '#3b82f6' } },
-                { name: 'Puls', x, y: pulse, mode: 'lines+markers', line: { color: '#10b981' }, yaxis: 'y2' }
+                { name: 'Puls', x, y: pul, mode: 'lines+markers', line: { color: '#10b981' }, yaxis: 'y2' }
             ];
 
             const layout = {

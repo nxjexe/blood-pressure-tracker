@@ -35,7 +35,7 @@
                 </div>
                 <div>
                     <label for="comment" class="block text-gray-700">Kommentar:</label>
-                    <textarea name="comment" id="comment" class="w-full p-2 border rounded" rows="4"></textarea>
+                    <textarea name="comment" id="comment" class="w-full p-2 border rounded" rows="1"></textarea>
                 </div>
                 <input type="submit" value="Hinzufügen" class="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700">
             {% if error %}
@@ -57,6 +57,7 @@
             <!-- Logs Tabelle -->
             {% if logs %}
             <h2 class="text-xl font-semibold mt-8 mb-4">Letzte Einträge</h2>
+            <div class="w-full overflow-x-auto">
             <table class="w-full border-collapse">
                 <thead>
                     <tr class="bg-gray-200">
@@ -64,7 +65,7 @@
                         <th class="p-2 border">Sys</th>
                         <th class="p-2 border">Dia</th>
                         <th class="p-2 border">Puls</th>
-                        <th class="p-2 border">Kommentar</th>
+                        <th class="p-2 border hidden md:table-cell">Kommentar</th>
                         <th class="p-2 border">Aktionen</th>
                     </tr>
                 </thead>
@@ -75,7 +76,9 @@
                         <td class="p-2 border">{{ log.sys }}</td>
                         <td class="p-2 border">{{ log.dia }}</td>
                         <td class="p-2 border">{{ log.pul }}</td>
-                        <td class="p-2 border">{{ log.comment or '' }}</td>
+                        <td class="p-2 border hidden md:table-cell">
+                            <span class="block max-w-[12rem] truncate" title="{{ log.comment or '' }}">{{ log.comment or '' }}</span>
+                        </td>
                         <td class="p-2 border">
                             <div class="relative inline-block" x-data="{ open: false }">
                                 <button type="button" class="px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-700" onclick="this.nextElementSibling.classList.remove('hidden')">
@@ -91,11 +94,21 @@
                                     </div>
                                 </div>
                             </div>
+                            {% if log.comment %}
+                            <button type="button" class="mt-2 md:hidden px-2 py-1 rounded border text-gray-700 hover:bg-gray-100" onclick="const r=this.closest('tr').nextElementSibling; if(r) r.classList.toggle('hidden')">Kommentar anzeigen</button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr class="md:hidden hidden">
+                        <td class="p-2 border bg-gray-50 text-sm" colspan="6">
+                            <span class="font-medium">Kommentar:</span>
+                            <span class="whitespace-pre-wrap">{{ log.comment or '' }}</span>
                         </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
+            </div>
             {% endif %}
         </main>
         <script>

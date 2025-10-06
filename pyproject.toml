@@ -1,0 +1,10 @@
+[project]
+name = "blood-pressure-tracker"
+version = "0.1.0"
+requires-python = ">=3.13"
+dependencies = [
+    "flask>=3.1.2",
+    "gunicorn>=23.0.0",
+    "pandas>=2.3.3",
+    "sqlalchemy>=2.0.43",
+]

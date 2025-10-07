@@ -12,6 +12,11 @@
             <nav class="flex justify-center space-x-4 mt-2">
                 <a href="{{ url_for('index') }}" class="hover:underline">Home</a>
                 <a href="{{ url_for('plot') }}" class="hover:underline">Plot</a>
+                {% if current_user.is_authenticated %}
+                <form action="{{ url_for('logout') }}" method="GET">  <!-- GET reicht, da logout idempotent -->
+                    <button type="submit">Logout</button>
+                </form>
+                {% endif %}
             </nav>
         </header>
         <main class="w-full max-w-3xl md:max-w-4xl lg:max-w-5xl mx-auto mt-8 p-6 bg-white rounded-lg shadow-md">
@@ -109,6 +114,23 @@
                 </tbody>
             </table>
             </div>
+            {% endif %}
+            <!-- User Liste für den Admin Account -->
+            {% if current_user.id == 1 %}
+            <h2>Admin: Users verwalten</h2>
+            <table>
+                <tr><th>Username</th><th>Aktion</th></tr>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user.username }}</td>
+                    <td>
+                        <form action="{{ url_for('delete_user', user_id=user.id) }}" method="POST">
+                            <button type="submit" onclick="return confirm('Sicher löschen?')">Löschen</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </table>
             {% endif %}
         </main>
         <script>

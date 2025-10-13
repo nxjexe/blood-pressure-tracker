@@ -16,6 +16,7 @@ def custom_timezone_now():
 
 app = Flask(__name__)
 app.secret_key = 'dev-key'  # Für flash; in Prod: os.getenv('SECRET_KEY')
+app.config['PERMANENT_SESSION_LIFETIME'] = 1209600  # 2 Wochen in Sekunden
 engine = create_engine('sqlite:///bp.db')
 Base = declarative_base()
 
@@ -224,11 +225,12 @@ def delete_log(log_id):
     session.close()
     return redirect(url_for('index'))
 
-@login_required
 @app.route('/plot')
+@login_required
 def plot():
+    app.logger.info(f"Current user: {current_user.is_authenticated}, ID: {getattr(current_user, 'id', 'None')}")
     session = Session()
-    logs = session.query(BPLog).filter(BPLog.user_id == current_user.id).order_by(BPLog.time.asc()).all()
+    logs = session.query(BPLog).filter_by(user_id=current_user.id).order_by(BPLog.time.asc()).all()
     session.close()
     return render_template('plot.html', logs=logs)
 

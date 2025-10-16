@@ -225,6 +225,49 @@ def delete_log(log_id):
     session.close()
     return redirect(url_for('index'))
 
+@app.route('/delete_own_account', methods=['POST'])
+@login_required
+def delete_own_account():
+    # Prevent admin from deleting their own account
+    if current_user.id == 1:
+        flash("Admin-Account kann nicht gelöscht werden!", "error")
+        return redirect(url_for('index'))
+    
+    confirm_password = request.form.get('confirm_password')
+    if not confirm_password:
+        flash("Passwort ist erforderlich!", "error")
+        return redirect(url_for('index'))
+    
+    session = Session()
+    user = session.query(User).get(current_user.id)
+    
+    # Verify password
+    if not check_password_hash(user.password, confirm_password):
+        session.close()
+        flash("Falsches Passwort!", "error")
+        return redirect(url_for('index'))
+    
+    try:
+        # Delete all user's blood pressure logs first
+        session.query(BPLog).filter_by(user_id=current_user.id).delete()
+        
+        # Delete the user account
+        session.delete(user)
+        session.commit()
+        session.close()
+        
+        # Logout the user
+        logout_user()
+        
+        flash("Ihr Account wurde erfolgreich gelöscht.", "success")
+        return redirect(url_for('login'))
+    except Exception as e:
+        session.rollback()
+        session.close()
+        app.logger.error(f"Fehler beim Löschen des Accounts: {str(e)}")
+        flash("Fehler beim Löschen des Accounts. Bitte versuchen Sie es erneut.", "error")
+        return redirect(url_for('index'))
+
 @app.route('/plot')
 @login_required
 def plot():

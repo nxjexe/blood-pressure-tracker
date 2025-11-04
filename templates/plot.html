@@ -100,6 +100,17 @@
                     markerLineWidths.push(lineWidths);
                 }
                 
+                // Save current ranges before restyling to prevent auto-adjustment
+                const currentLayout = plotDiv.layout;
+                const currentRanges = {
+                    'xaxis.range': currentLayout.xaxis.range ? 
+                        [currentLayout.xaxis.range[0], currentLayout.xaxis.range[1]] : null,
+                    'yaxis.range': currentLayout.yaxis.range ? 
+                        [currentLayout.yaxis.range[0], currentLayout.yaxis.range[1]] : null,
+                    'yaxis2.range': currentLayout.yaxis2 && currentLayout.yaxis2.range ? 
+                        [currentLayout.yaxis2.range[0], currentLayout.yaxis2.range[1]] : null
+                };
+
                 // Update all three traces using Plotly.restyle
                 // Don't update marker.color to preserve legend colors
                 Plotly.restyle(plotDiv, {
@@ -108,21 +119,28 @@
                     'marker.line.color': markerLineColors,
                     'marker.line.width': markerLineWidths
                 }, [0, 1, 2]).then(function() {
-                    // Restore fixed axis ranges to prevent auto-scaling
-                    if (fixedRanges) {
-                        const updateLayout = {};
-                        if (fixedRanges['xaxis.range']) {
-                            updateLayout['xaxis.range'] = fixedRanges['xaxis.range'];
+                    // Restore current ranges to prevent auto-scaling from larger markers
+                    const updateLayout = {};
+                    if (currentRanges['xaxis.range']) {
+                        updateLayout['xaxis.range'] = currentRanges['xaxis.range'];
+                    }
+                    if (currentRanges['yaxis.range']) {
+                        updateLayout['yaxis.range'] = currentRanges['yaxis.range'];
+                    }
+                    if (currentRanges['yaxis2.range']) {
+                        updateLayout['yaxis2.range'] = currentRanges['yaxis2.range'];
+                    }
+                    // Also lock autorange if we have ranges to prevent auto-scaling
+                    if (Object.keys(updateLayout).length > 0) {
+                        updateLayout['xaxis.autorange'] = false;
+                        updateLayout['yaxis.autorange'] = false;
+                        if (currentRanges['yaxis2.range']) {
+                            updateLayout['yaxis2.autorange'] = false;
                         }
-                        if (fixedRanges['yaxis.range']) {
-                            updateLayout['yaxis.range'] = fixedRanges['yaxis.range'];
-                        }
-                        if (fixedRanges['yaxis2.range']) {
-                            updateLayout['yaxis2.range'] = fixedRanges['yaxis2.range'];
-                        }
-                        if (Object.keys(updateLayout).length > 0) {
-                            Plotly.relayout(plotDiv, updateLayout);
-                        }
+                        isProgrammaticRelayout = true;
+                        Plotly.relayout(plotDiv, updateLayout).then(function() {
+                            isProgrammaticRelayout = false;
+                        });
                     }
                 });
             }
@@ -141,6 +159,17 @@
                     markerLineWidths.push(new Array(dataLength).fill(0));
                 }
                 
+                // Save current ranges before restyling to prevent auto-adjustment
+                const currentLayout = plotDiv.layout;
+                const currentRanges = {
+                    'xaxis.range': currentLayout.xaxis.range ? 
+                        [currentLayout.xaxis.range[0], currentLayout.xaxis.range[1]] : null,
+                    'yaxis.range': currentLayout.yaxis.range ? 
+                        [currentLayout.yaxis.range[0], currentLayout.yaxis.range[1]] : null,
+                    'yaxis2.range': currentLayout.yaxis2 && currentLayout.yaxis2.range ? 
+                        [currentLayout.yaxis2.range[0], currentLayout.yaxis2.range[1]] : null
+                };
+
                 // Don't update marker.color to preserve legend colors
                 Plotly.restyle(plotDiv, {
                     'marker.size': markerSizes,
@@ -148,27 +177,35 @@
                     'marker.line.color': markerLineColors,
                     'marker.line.width': markerLineWidths
                 }, [0, 1, 2]).then(function() {
-                    // Restore fixed axis ranges to prevent auto-scaling
-                    if (fixedRanges) {
-                        const updateLayout = {};
-                        if (fixedRanges['xaxis.range']) {
-                            updateLayout['xaxis.range'] = fixedRanges['xaxis.range'];
+                    // Restore current ranges to prevent auto-scaling from marker size changes
+                    const updateLayout = {};
+                    if (currentRanges['xaxis.range']) {
+                        updateLayout['xaxis.range'] = currentRanges['xaxis.range'];
+                    }
+                    if (currentRanges['yaxis.range']) {
+                        updateLayout['yaxis.range'] = currentRanges['yaxis.range'];
+                    }
+                    if (currentRanges['yaxis2.range']) {
+                        updateLayout['yaxis2.range'] = currentRanges['yaxis2.range'];
+                    }
+                    // Also lock autorange if we have ranges to prevent auto-scaling
+                    if (Object.keys(updateLayout).length > 0) {
+                        updateLayout['xaxis.autorange'] = false;
+                        updateLayout['yaxis.autorange'] = false;
+                        if (currentRanges['yaxis2.range']) {
+                            updateLayout['yaxis2.autorange'] = false;
                         }
-                        if (fixedRanges['yaxis.range']) {
-                            updateLayout['yaxis.range'] = fixedRanges['yaxis.range'];
-                        }
-                        if (fixedRanges['yaxis2.range']) {
-                            updateLayout['yaxis2.range'] = fixedRanges['yaxis2.range'];
-                        }
-                        if (Object.keys(updateLayout).length > 0) {
-                            Plotly.relayout(plotDiv, updateLayout);
-                        }
+                        isProgrammaticRelayout = true;
+                        Plotly.relayout(plotDiv, updateLayout).then(function() {
+                            isProgrammaticRelayout = false;
+                        });
                     }
                 });
             }
 
             // Store initial axis ranges to prevent auto-scaling
             let fixedRanges = null;
+            let isProgrammaticRelayout = false; // Flag to prevent recursion
 
             // Create plot and set up event listeners after plot is ready
             Plotly.newPlot('chart', traces, layout, { displayModeBar: false, responsive: true })
@@ -184,10 +221,40 @@
                     };
 
                     // Lock axes to prevent auto-scaling
+                    isProgrammaticRelayout = true;
                     Plotly.relayout(plotDiv, {
                         'xaxis.autorange': false,
                         'yaxis.autorange': false,
                         'yaxis2.autorange': false
+                    }).then(function() {
+                        isProgrammaticRelayout = false;
+                    });
+
+                    // Update fixedRanges when user manually zooms or pans
+                    plotDiv.on('plotly_relayout', function(eventData) {
+                        // Ignore programmatic relayouts (from our code)
+                        if (isProgrammaticRelayout) return;
+                        
+                        // Only update if autorange is false (user has zoomed in, not out)
+                        const currentLayout = plotDiv.layout;
+                        if (!currentLayout.xaxis.autorange && 
+                            !currentLayout.yaxis.autorange && 
+                            (!currentLayout.yaxis2 || !currentLayout.yaxis2.autorange)) {
+                            // User has manually zoomed/panned - update fixed ranges to current view
+                            if (currentLayout.xaxis.range && 
+                                currentLayout.yaxis.range && 
+                                (!currentLayout.yaxis2 || currentLayout.yaxis2.range)) {
+                                fixedRanges = {
+                                    'xaxis.range': [currentLayout.xaxis.range[0], currentLayout.xaxis.range[1]],
+                                    'yaxis.range': [currentLayout.yaxis.range[0], currentLayout.yaxis.range[1]],
+                                    'yaxis2.range': currentLayout.yaxis2 && currentLayout.yaxis2.range ? 
+                                        [currentLayout.yaxis2.range[0], currentLayout.yaxis2.range[1]] : null
+                                };
+                            }
+                        } else {
+                            // User has zoomed out (autorange is true) - clear fixed ranges so we don't restore old zoom
+                            fixedRanges = null;
+                        }
                     });
 
                     // Event listeners for hover and click

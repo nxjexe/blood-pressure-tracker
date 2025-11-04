@@ -52,9 +52,9 @@
             const pul = logs.map(l => l.pul);
 
             const traces = [
-                { name: 'Sys', x, y: sys, mode: 'lines+markers', line: { color: '#ef4444' } },
-                { name: 'Dia', x, y: dia, mode: 'lines+markers', line: { color: '#3b82f6' } },
-                { name: 'Puls', x, y: pul, mode: 'lines+markers', line: { color: '#10b981' }, yaxis: 'y2' }
+                { name: 'Sys', x, y: sys, mode: 'markers', marker: { color: '#3b82f6', size: 8, opacity: 1.0 } },
+                { name: 'Dia', x, y: dia, mode: 'markers', marker: { color: '#10b981', size: 8, opacity: 1.0 } },
+                { name: 'Puls', x, y: pul, mode: 'markers', marker: { color: '#ef4444', size: 8, opacity: 1.0 }, yaxis: 'y2' }
             ];
 
             const layout = {
@@ -65,7 +65,163 @@
                 legend: { orientation: 'h', x: 0, y: -0.2 }
             };
 
-            Plotly.newPlot('chart', traces, layout, { displayModeBar: false, responsive: true });
+            const plotDiv = document.getElementById('chart');
+            
+            // Store original marker properties
+            const originalColors = ['#3b82f6', '#10b981', '#ef4444'];
+            const originalSizes = [8, 8, 8];
+            const dataLength = sys.length;
+
+            // Function to highlight related points from the same measurement
+            function highlightRelatedPoints(pointIndex) {
+                if (pointIndex === undefined || pointIndex === null || pointIndex < 0 || pointIndex >= dataLength) return;
+                
+                // Create arrays for marker sizes, opacities, and line colors for all traces
+                // Keep marker.color as single values (not arrays) to preserve legend colors
+                const markerSizes = [];
+                const markerOpacities = [];
+                const markerLineColors = [];
+                const markerLineWidths = [];
+                
+                for (let i = 0; i < 3; i++) {
+                    const sizes = new Array(dataLength).fill(originalSizes[i]);
+                    const opacities = new Array(dataLength).fill(1.0); // Fully opaque
+                    const lineColors = new Array(dataLength).fill('transparent');
+                    const lineWidths = new Array(dataLength).fill(0);
+                    
+                    // Highlight the point at this index - use larger size and yellow border
+                    sizes[pointIndex] = 16;
+                    lineColors[pointIndex] = '#fbbf24'; // Yellow highlight border
+                    lineWidths[pointIndex] = 3; // Thick border
+                    
+                    markerSizes.push(sizes);
+                    markerOpacities.push(opacities);
+                    markerLineColors.push(lineColors);
+                    markerLineWidths.push(lineWidths);
+                }
+                
+                // Update all three traces using Plotly.restyle
+                // Don't update marker.color to preserve legend colors
+                Plotly.restyle(plotDiv, {
+                    'marker.size': markerSizes,
+                    'marker.opacity': markerOpacities,
+                    'marker.line.color': markerLineColors,
+                    'marker.line.width': markerLineWidths
+                }, [0, 1, 2]).then(function() {
+                    // Restore fixed axis ranges to prevent auto-scaling
+                    if (fixedRanges) {
+                        const updateLayout = {};
+                        if (fixedRanges['xaxis.range']) {
+                            updateLayout['xaxis.range'] = fixedRanges['xaxis.range'];
+                        }
+                        if (fixedRanges['yaxis.range']) {
+                            updateLayout['yaxis.range'] = fixedRanges['yaxis.range'];
+                        }
+                        if (fixedRanges['yaxis2.range']) {
+                            updateLayout['yaxis2.range'] = fixedRanges['yaxis2.range'];
+                        }
+                        if (Object.keys(updateLayout).length > 0) {
+                            Plotly.relayout(plotDiv, updateLayout);
+                        }
+                    }
+                });
+            }
+
+            // Reset all points to default state
+            function resetAllPoints() {
+                const markerSizes = [];
+                const markerOpacities = [];
+                const markerLineColors = [];
+                const markerLineWidths = [];
+                
+                for (let i = 0; i < 3; i++) {
+                    markerSizes.push(new Array(dataLength).fill(originalSizes[i]));
+                    markerOpacities.push(new Array(dataLength).fill(1.0)); // Fully opaque
+                    markerLineColors.push(new Array(dataLength).fill('transparent'));
+                    markerLineWidths.push(new Array(dataLength).fill(0));
+                }
+                
+                // Don't update marker.color to preserve legend colors
+                Plotly.restyle(plotDiv, {
+                    'marker.size': markerSizes,
+                    'marker.opacity': markerOpacities,
+                    'marker.line.color': markerLineColors,
+                    'marker.line.width': markerLineWidths
+                }, [0, 1, 2]).then(function() {
+                    // Restore fixed axis ranges to prevent auto-scaling
+                    if (fixedRanges) {
+                        const updateLayout = {};
+                        if (fixedRanges['xaxis.range']) {
+                            updateLayout['xaxis.range'] = fixedRanges['xaxis.range'];
+                        }
+                        if (fixedRanges['yaxis.range']) {
+                            updateLayout['yaxis.range'] = fixedRanges['yaxis.range'];
+                        }
+                        if (fixedRanges['yaxis2.range']) {
+                            updateLayout['yaxis2.range'] = fixedRanges['yaxis2.range'];
+                        }
+                        if (Object.keys(updateLayout).length > 0) {
+                            Plotly.relayout(plotDiv, updateLayout);
+                        }
+                    }
+                });
+            }
+
+            // Store initial axis ranges to prevent auto-scaling
+            let fixedRanges = null;
+
+            // Create plot and set up event listeners after plot is ready
+            Plotly.newPlot('chart', traces, layout, { displayModeBar: false, responsive: true })
+                .then(function() {
+                    // Get and lock the axis ranges after initial plot
+                    const plotData = plotDiv.data;
+                    const currentLayout = plotDiv.layout;
+                    
+                    fixedRanges = {
+                        'xaxis.range': [currentLayout.xaxis.range[0], currentLayout.xaxis.range[1]],
+                        'yaxis.range': [currentLayout.yaxis.range[0], currentLayout.yaxis.range[1]],
+                        'yaxis2.range': currentLayout.yaxis2 ? [currentLayout.yaxis2.range[0], currentLayout.yaxis2.range[1]] : null
+                    };
+
+                    // Lock axes to prevent auto-scaling
+                    Plotly.relayout(plotDiv, {
+                        'xaxis.autorange': false,
+                        'yaxis.autorange': false,
+                        'yaxis2.autorange': false
+                    });
+
+                    // Event listeners for hover and click
+                    plotDiv.on('plotly_hover', function(data) {
+                        if (data.points && data.points.length > 0) {
+                            const point = data.points[0];
+                            const pointIndex = point.pointNumber;
+                            highlightRelatedPoints(pointIndex);
+                        }
+                    });
+
+                    plotDiv.on('plotly_unhover', function() {
+                        resetAllPoints();
+                    });
+
+                    plotDiv.on('plotly_click', function(data) {
+                        if (data.points && data.points.length > 0) {
+                            const point = data.points[0];
+                            const pointIndex = point.pointNumber;
+                            highlightRelatedPoints(pointIndex);
+                        } else {
+                            // Clicked on empty area within the plot
+                            resetAllPoints();
+                        }
+                    });
+
+                    // Handle clicks outside the plot area
+                    document.addEventListener('click', function(event) {
+                        // Check if click is outside the plot div
+                        if (!plotDiv.contains(event.target)) {
+                            resetAllPoints();
+                        }
+                    });
+                });
         })();
         </script>
     </body>
